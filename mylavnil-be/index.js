@@ -51,10 +51,12 @@ app.post("/signup", async (req, res) => {
   // Insert the new user into the users collection
 
   try {
-    const user = new User(newUser);
-    const result = await user.save();
-    // await new User.insertOne(newUser);
-    res.send(200).send(result);
+    const users = await User.find({ username });
+    if(!users) {
+      const user = new User(newUser);
+      const result = await user.save();
+      res.sendStatus(200).send(result);
+    }
   } catch (error) {
     res.status(500).send(error);
   }
@@ -70,7 +72,7 @@ app.post("/bookappointment", async (req, res) => {
     const appointment = { date, status: "booked", doctor: "" };
     user.Appointments.push(appointment);
     await user.save();
-    res.sendStatus(200).send("saved succesfully");
+    res.status(200).send(user);
   } catch (error) {
     res.sendStatus(500).send(error);
   }
@@ -80,6 +82,7 @@ app.post("/bookappointment", async (req, res) => {
 app.get('/getappointments', async (req,res) => {
 try {
   const users = await User.find({ username: req.query.username });
+  console.log('Your Appointments: ', users)
   res.status(200).send(users);
 }
 catch(error) {
@@ -121,6 +124,7 @@ app.get("/users", async (req, res) => {
 app.get("/login", async (req, res) => {
   try {
     const users = await User.find({ username: req.query.loginusername });
+    console.log('server login',req.query.loginusername , users)
     const isMatch = await bcrypt.compare(req.query.loginpassword, users[0].password);
     console.log("match: ", isMatch,users[0].password,req.query.loginpassword);
     if (isMatch) {
@@ -130,7 +134,7 @@ app.get("/login", async (req, res) => {
       );
       console.log("token: ", token);
     //   res.cookie("token", token);
-      res.status(200).send({token : token, login : 'success'});
+      res.status(200).send({token : token, login : true, username: users[0].username});
     } else {
       res.status(500).send("password is Incorrect");
     }
